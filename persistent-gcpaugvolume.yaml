@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: yyyyyyyy
+  namespace: sssssss
+spec:
+  capacity:
+    storage: 5Gi
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Recycle
+  storageClassName: ""
+  mountOptions:
+    - hard
+  nfs:
+    path: /xxxxxxxx
+    server: 10.151.253.226

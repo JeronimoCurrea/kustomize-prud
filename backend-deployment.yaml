@@ -1,0 +1,90 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: backend
+  namespace: coding
+  labels:
+    app: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: "augmented-coding:v2.4.0"
+          imagePullPolicy: Always
+          ports:
+          #backend-http
+            - name: backend-http
+              containerPort: 8000
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: backend-http
+              scheme: HTTP
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 1
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health
+              port: backend-http
+              scheme: HTTP
+            initialDelaySeconds: 300
+            periodSeconds: 30
+            successThreshold: 1
+            timeoutSeconds: 5
+          env:
+          resources:
+            limits:
+              cpu: "4"
+              memory: "20Gi"
+            requests:
+              cpu: "1.5"
+              memory: "5Gi"
+          volumeMounts:
+            - mountPath: /app/data
+              name: dir-root
+            - mountPath: /app/data/build
+              name: dir-build
+      volumes:
+        - name: dir-root
+          persistentVolumeClaim:
+            claimName: augfilestorage-claim
+            readOnly: false  
+        - name: dir-build
+          emptyDir: {}
+        - name: nginx-conf
+          configMap:
+            name: backend-proxy-conf
+            items:
+            - key: nginx.conf
+              path: nginx.conf
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: backend
+  name: backend
+  namespace: coding
+  annotations:
+    cloud.google.com/backend-config: '{"ports": {"8000":"ac-backendconfig"}}'
+spec:
+  ports:
+  - name: backend-http
+    port: 8000
+    protocol: TCP
+    targetPort: http
+  selector:
+    app: backend
